@@ -1,0 +1,26 @@
+{
+    "name": "tornado-engine/access",
+    "description": "Tornado Engine core-module: users, roles, and which pages each person can see.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "illuminate/support": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TornadoEngine\\Access\\": "src/"
+        }
+    },
+    "extra": {
+        "tornado": {
+            "name": "Access",
+            "core": ">=0.3",
+            "core-module": true,
+            "provider": "TornadoEngine\\Access\\AccessServiceProvider"
+        },
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    }
+}
