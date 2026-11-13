@@ -21,6 +21,9 @@ class Access
     /** @var array<string, Permission> */
     private array $permissions = [];
 
+    /** @var array<string, array{label: string, active: string}> Tabs modules add next to Users and Roles. */
+    private array $tabs = [];
+
     /** @var array<int, list<string>> Each user's permissions, loaded once per request. */
     private array $granted = [];
 
@@ -29,6 +32,30 @@ class Access
         $this->permissions[$key] = new Permission($key, $label, $module);
 
         return $this;
+    }
+
+    /**
+     * Adds a tab next to Users and Roles, for example Access-Google's:
+     *
+     *     $access->tab('access.google.index', __('Google'), active: 'access.google.*');
+     *
+     * Name its routes access.* (so the menu stays highlighted), and give its pages
+     * <x-admin-layout> and @include('access::tabs'), behind "can:access.manage".
+     */
+    public function tab(string $route, string $label, ?string $active = null): static
+    {
+        $this->tabs[$route] = ['label' => $label, 'active' => $active ?? $route];
+
+        return $this;
+    }
+
+    /** @return array<string, array{label: string, active: string}> */
+    public function tabs(): array
+    {
+        return [
+            'access.users.index' => ['label' => __('Users'), 'active' => 'access.users.*'],
+            'access.roles.index' => ['label' => __('Roles'), 'active' => 'access.roles.*'],
+        ] + $this->tabs;
     }
 
     public function has(string $key): bool
