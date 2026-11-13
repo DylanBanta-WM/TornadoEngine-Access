@@ -33,6 +33,10 @@ class AccessServiceProvider extends ServiceProvider
 
         $this->callAfterResolving(Nav::class, function (Nav $nav) {
             $nav->user(__('Users and roles'), 'access.users.index', active: 'access.*', order: 800, can: 'access.manage');
+            if (method_exists($nav, 'tool')) {
+                $nav->tool(__('Users and roles'), 'access.users.index', __('Who can sign in, and what each role can open.'),
+                    section: __('Administration'), icon: 'users', color: 'blue', can: 'access.manage');
+            }
         });
     }
 }
