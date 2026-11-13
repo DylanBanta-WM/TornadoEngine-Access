@@ -24,6 +24,9 @@ class Access
     /** @var array<string, array{label: string, active: string}> Tabs modules add next to Users and Roles. */
     private array $tabs = [];
 
+    /** @var list<string> Views modules add next to Edit on the Users list; each gets. */
+    private array $userActions = [];
+
     /** @var array<int, list<string>> Each user's permissions, loaded once per request. */
     private array $granted = [];
 
@@ -56,6 +59,23 @@ class Access
             'access.users.index' => ['label' => __('Users'), 'active' => 'access.users.*'],
             'access.roles.index' => ['label' => __('Roles'), 'active' => 'access.roles.*'],
         ] + $this->tabs;
+    }
+
+    /**
+     * Adds a view next to each person's Edit button on the Users list. It gets $user, and
+     * decides itself whether to show anything.
+     */
+    public function userAction(string $view): static
+    {
+        $this->userActions[] = $view;
+
+        return $this;
+    }
+
+    /** @return list<string> */
+    public function userActions(): array
+    {
+        return $this->userActions;
     }
 
     public function has(string $key): bool

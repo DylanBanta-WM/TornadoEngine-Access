@@ -43,7 +43,12 @@
                     </p>
                 </div>
                 @unless ($user->is_admin)
-                    <x-secondary-link :href="route('access.users.edit', $user)" class="self-start sm:self-auto">{{ __('Edit') }}</x-secondary-link>
+                    <div class="flex flex-wrap items-start gap-2 self-start sm:justify-end sm:self-auto">
+                        @foreach (app(\TornadoEngine\Access\Access::class)->userActions() as $action)
+                            @include($action, ['user' => $user])
+                        @endforeach
+                        <x-secondary-link :href="route('access.users.edit', $user)">{{ __('Edit') }}</x-secondary-link>
+                    </div>
                 @endunless
             </div>
         @endforeach
