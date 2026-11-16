@@ -17,7 +17,9 @@
                 </div>
             </div>
             @include('access::role-checkboxes', ['checked' => array_map('intval', old('roles', []))])
-            <p class="text-gray-600 dark:text-gray-400">{{ __('They can sign in with their Google account once they\'re added. Their name is filled in from Google when they do.') }}</p>
+            @if (\TornadoEngine\Access\Http\UsersController::passwords())
+                @include('access::password-fields', ['editing' => false])
+            @endif
             <div class="flex justify-end">
                 <x-primary-button>{{ __('Add') }}</x-primary-button>
             </div>

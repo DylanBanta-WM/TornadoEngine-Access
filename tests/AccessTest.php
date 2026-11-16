@@ -188,4 +188,35 @@ class AccessTest extends TestCase
         $this->actingAs($owner)->get('/access/users')->assertSee('ann@school.test');
         $this->actingAs(User::factory()->create())->get('/access/exclusions')->assertForbidden();
     }
+
+    public function test_with_website_passwords_new_people_get_one_to_change(): void
+    {
+        \App\Support\SignIn::save(['google', 'password']);
+        $owner = $this->owner();
+
+        $this->actingAs($owner)->get('/access/users')->assertSee('ChangeMe!')->assertSee('Must change it at next sign-in');
+        $this->actingAs($owner)->post('/access/users', ['email' => 'kim@elsewhere.test', 'must_change_password' => '1']);
+        $kim = User::where('email', 'kim@elsewhere.test')->sole();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('ChangeMe!', $kim->password));
+        $this->assertTrue($kim->must_change_password);
+
+        $this->actingAs($owner)->post('/access/users', ['email' => 'lee@school.test', 'password' => 'chosen-password', 'must_change_password' => '0']);
+        $lee = User::where('email', 'lee@school.test')->sole();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('chosen-password', $lee->password));
+        $this->assertFalse($lee->must_change_password);
+
+        $this->actingAs($owner)->put("/access/users/{$lee->id}", ['password' => 'reset-password', 'must_change_password' => '1']);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('reset-password', $lee->fresh()->password));
+        $this->assertTrue($lee->fresh()->must_change_password);
+    }
+
+    public function test_without_website_passwords_there_are_no_password_fields(): void
+    {
+        \App\Support\SignIn::save(['google']);
+        $owner = $this->owner();
+
+        $this->actingAs($owner)->get('/access/users')->assertDontSee('ChangeMe!');
+        $this->actingAs($owner)->post('/access/users', ['email' => 'kim@school.test', 'password' => 'ignored-password']);
+        $this->assertNull(User::where('email', 'kim@school.test')->value('password'));
+    }
 }

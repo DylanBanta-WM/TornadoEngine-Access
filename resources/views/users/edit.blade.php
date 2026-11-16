@@ -7,6 +7,9 @@
             @csrf
             @method('PUT')
             @include('access::role-checkboxes', ['checked' => $user->roles->pluck('id')->all()])
+            @if (\TornadoEngine\Access\Http\UsersController::passwords())
+                @include('access::password-fields', ['editing' => true])
+            @endif
             <div class="flex justify-end gap-3">
                 <x-secondary-link :href="route('access.users.index')">{{ __('Cancel') }}</x-secondary-link>
                 <x-primary-button>{{ __('Save') }}</x-primary-button>
