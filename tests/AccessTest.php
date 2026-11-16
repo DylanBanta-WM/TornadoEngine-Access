@@ -5,7 +5,9 @@ namespace TornadoEngine\Access\Tests;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\GoogleSignIn;
+use App\Support\SignIn;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Two\User as GoogleUser;
 use Tests\TestCase;
 use TornadoEngine\Access\Access;
@@ -13,6 +15,7 @@ use TornadoEngine\Access\Imports;
 use TornadoEngine\Access\Models\Exclusion;
 use TornadoEngine\Access\Models\Role;
 use TornadoEngine\Nav\Nav;
+use TornadoEngine\Nav\NavGroup;
 
 class AccessTest extends TestCase
 {
@@ -130,9 +133,13 @@ class AccessTest extends TestCase
             ->assertSessionHasErrors('permissions.0');
     }
 
-    public function test_users_and_roles_is_in_the_user_menu_for_managers(): void
+    public function test_users_and_roles_is_in_the_administration_dropdown_for_managers(): void
     {
-        $labels = fn (?User $user) => array_map(fn ($item) => $item->label, app(Nav::class)->userItemsFor($user));
+        $labels = function (?User $user) {
+            $group = collect(app(Nav::class)->for($user))->first(fn ($entry) => $entry instanceof NavGroup && $entry->key === 'administration');
+
+            return $group ? array_map(fn ($item) => $item->label, $group->items) : [];
+        };
 
         $this->assertContains('Users and roles', $labels($this->owner()));
         $this->assertNotContains('Users and roles', $labels(User::factory()->create()));
@@ -191,32 +198,61 @@ class AccessTest extends TestCase
 
     public function test_with_website_passwords_new_people_get_one_to_change(): void
     {
-        \App\Support\SignIn::save(['google', 'password']);
+        SignIn::save(['google', 'password']);
         $owner = $this->owner();
 
         $this->actingAs($owner)->get('/access/users')->assertSee('ChangeMe!')->assertSee('Must change it at next sign-in');
         $this->actingAs($owner)->post('/access/users', ['email' => 'kim@elsewhere.test', 'must_change_password' => '1']);
         $kim = User::where('email', 'kim@elsewhere.test')->sole();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('ChangeMe!', $kim->password));
+        $this->assertTrue(Hash::check('ChangeMe!', $kim->password));
         $this->assertTrue($kim->must_change_password);
 
         $this->actingAs($owner)->post('/access/users', ['email' => 'lee@school.test', 'password' => 'chosen-password', 'must_change_password' => '0']);
         $lee = User::where('email', 'lee@school.test')->sole();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('chosen-password', $lee->password));
+        $this->assertTrue(Hash::check('chosen-password', $lee->password));
         $this->assertFalse($lee->must_change_password);
 
         $this->actingAs($owner)->put("/access/users/{$lee->id}", ['password' => 'reset-password', 'must_change_password' => '1']);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('reset-password', $lee->fresh()->password));
+        $this->assertTrue(Hash::check('reset-password', $lee->fresh()->password));
         $this->assertTrue($lee->fresh()->must_change_password);
     }
 
     public function test_without_website_passwords_there_are_no_password_fields(): void
     {
-        \App\Support\SignIn::save(['google']);
+        SignIn::save(['google']);
         $owner = $this->owner();
 
         $this->actingAs($owner)->get('/access/users')->assertDontSee('ChangeMe!');
         $this->actingAs($owner)->post('/access/users', ['email' => 'kim@school.test', 'password' => 'ignored-password']);
         $this->assertNull(User::where('email', 'kim@school.test')->value('password'));
+    }
+
+    public function test_the_profile_shows_how_someone_signs_in_their_roles_and_what_they_can_open(): void
+    {
+        $teachers = $this->role('Teachers', ['access.manage']);
+        $library = $this->role('Library', []);
+        app(Imports::class)->apply('google', [$teachers->id => ['kim@school.test' => 'Kim Teacher']]);
+        $kim = User::where('email', 'kim@school.test')->sole();
+        $kim->forceFill(['google_id' => 'g-1'])->save();
+        $kim->roles()->attach($library);
+
+        $this->actingAs($kim)->get('/profile')
+            ->assertOk()
+            ->assertSeeInOrder(['Signs in with:', 'Google'])
+            ->assertSeeInOrder(['Library', 'Given by hand', 'Teachers', 'Google'])
+            ->assertSee('Users and roles')
+            ->assertSee('Manage users and roles')
+            ->assertDontSee('Change password');
+
+        $this->actingAs(User::factory()->create(['password' => Hash::make('secret-pass')]))->get('/profile')
+            ->assertSeeInOrder(['Signs in with:', 'Website password'])->assertSee('No roles yet.')->assertSee('Change password');
+        $this->get('/profile');
+    }
+
+    public function test_admin_pages_are_in_the_administration_dropdown_and_the_user_menu_has_profile(): void
+    {
+        $this->actingAs($this->owner())->get('/dashboard')
+            ->assertSeeInOrder(['Administration', 'Administration', 'Users and roles', 'Modules'])
+            ->assertSee(route('profile'));
     }
 }

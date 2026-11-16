@@ -34,7 +34,8 @@ class AccessServiceProvider extends ServiceProvider
             : null);
 
         $this->callAfterResolving(Nav::class, function (Nav $nav) {
-            $nav->user(__('Users and roles'), 'access.users.index', active: 'access.*', order: 800, can: 'access.manage');
+            $nav->add(__('Users and roles'), 'access.users.index', active: 'access.*', order: 20, can: 'access.manage', group: 'administration');
+            $nav->user(__('Profile'), 'profile', order: 10);
             if (method_exists($nav, 'tool')) {
                 $nav->tool(__('Users and roles'), 'access.users.index', __('Who can sign in, and what each role can open.'),
                     section: __('Administration'), icon: 'users', color: 'blue', can: 'access.manage');
