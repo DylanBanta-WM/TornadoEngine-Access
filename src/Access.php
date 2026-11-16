@@ -58,6 +58,7 @@ class Access
         return [
             'access.users.index' => ['label' => __('Users'), 'active' => 'access.users.*'],
             'access.roles.index' => ['label' => __('Roles'), 'active' => 'access.roles.*'],
+            'access.exclusions.index' => ['label' => __('Excluded'), 'active' => 'access.exclusions.*'],
         ] + $this->tabs;
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use TornadoEngine\Access\Access;
+use TornadoEngine\Access\Models\Exclusion;
 use TornadoEngine\Access\Models\Role;
 
 /**
@@ -20,7 +21,8 @@ class UsersController extends Controller
     public function index(): View
     {
         return view('access::users.index', [
-            'users' => User::with('roles')->orderBy('name')->get(),
+            // Excluded people are on the Excluded tab instead.
+            'users' => User::with('roles')->whereNotIn('email', Exclusion::select('email'))->orderBy('name')->get(),
             'roles' => Role::orderBy('name')->get(),
             'domain' => GoogleSignIn::domain(),
         ]);

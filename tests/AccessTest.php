@@ -9,6 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Two\User as GoogleUser;
 use Tests\TestCase;
 use TornadoEngine\Access\Access;
+use TornadoEngine\Access\Imports;
+use TornadoEngine\Access\Models\Exclusion;
 use TornadoEngine\Access\Models\Role;
 use TornadoEngine\Nav\Nav;
 
@@ -134,5 +136,56 @@ class AccessTest extends TestCase
 
         $this->assertContains('Users and roles', $labels($this->owner()));
         $this->assertNotContains('Users and roles', $labels(User::factory()->create()));
+    }
+
+    public function test_imports_from_two_sources_only_take_back_their_own_roles(): void
+    {
+        $imports = app(Imports::class);
+        $staff = Role::create(['name' => 'Staff']);
+        $library = Role::create(['name' => 'Library']);
+        $byHand = User::factory()->create(['email' => 'kim@school.test']);
+        $byHand->roles()->attach($library);
+
+        $result = $imports->apply('google', [$staff->id => ['Ann@school.test' => 'Ann Teacher'], $library->id => ['kim@school.test' => 'Kim']]);
+        $this->assertSame(['gave' => 1, 'took_back' => 0, 'added' => 1, 'people' => 2], $result);
+        $imports->apply('ad', [$staff->id => ['ann@school.test' => 'Ann Teacher']]);
+        $ann = User::where('email', 'ann@school.test')->first();
+        $this->assertSame('Ann Teacher', $ann->name);
+
+        // Google drops Ann: AD still gives her Staff. Google never had Kim's Library role (given by hand).
+        $imports->apply('google', []);
+        $this->assertTrue($ann->roles()->where('name', 'Staff')->exists());
+        $this->assertTrue($byHand->roles()->where('name', 'Library')->exists());
+
+        // AD drops her too: now it's taken back.
+        $this->assertSame(1, $imports->apply('ad', [])['took_back']);
+        $this->assertFalse($ann->roles()->exists());
+    }
+
+    public function test_excluded_people_are_left_out_of_imports_and_moved_to_the_excluded_tab(): void
+    {
+        $imports = app(Imports::class);
+        $owner = $this->owner();
+        $staff = Role::create(['name' => 'Staff']);
+        $imports->apply('google', [$staff->id => ['ann@school.test' => 'Ann Teacher']]);
+
+        $this->actingAs($owner)->get('/access/users')->assertSeeInOrder(['Ann Teacher', 'Exclude', 'Edit']);
+        $this->actingAs($owner)->post('/access/exclusions', ['email' => 'ann@school.test', 'reason' => 'Employment ended']);
+
+        $ann = User::where('email', 'ann@school.test')->first();
+        $this->assertFalse($ann->roles()->exists());
+        $this->assertSame(0, $imports->apply('google', [$staff->id => ['ann@school.test' => 'Ann Teacher']])['gave']);
+        $this->actingAs($owner)->get('/access/users')->assertDontSee('Ann Teacher');
+        $this->actingAs($owner)->get('/access/exclusions')->assertSeeInOrder(['Ann Teacher', 'ann@school.test', 'Employment ended', 'Change reason', 'Edit', 'Un-exclude']);
+
+        $exclusion = Exclusion::sole();
+        $this->actingAs($owner)->put("/access/exclusions/{$exclusion->id}", ['reason' => 'other', 'other' => 'On leave']);
+        $this->assertSame('On leave', $exclusion->fresh()->reason);
+        $this->actingAs($owner)->from('/access/exclusions')->post('/access/exclusions', ['email' => 'svc@school.test', 'reason' => 'other'])->assertSessionHasErrors('other');
+
+        $this->actingAs($owner)->delete("/access/exclusions/{$exclusion->id}");
+        $this->assertSame(1, $imports->apply('google', [$staff->id => ['ann@school.test' => 'Ann Teacher']])['gave']);
+        $this->actingAs($owner)->get('/access/users')->assertSee('ann@school.test');
+        $this->actingAs(User::factory()->create())->get('/access/exclusions')->assertForbidden();
     }
 }

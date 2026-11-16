@@ -13,6 +13,7 @@ class AccessServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Access::class);
+        $this->app->singleton(Imports::class);
     }
 
     public function boot(Access $access): void
@@ -25,6 +26,7 @@ class AccessServiceProvider extends ServiceProvider
 
         $access->permission('administration', __('Change the setup settings (Administration)'), 'Core');
         $access->permission('access.manage', __('Manage users and roles'), 'Access');
+        $access->userAction('access::exclude-button');
 
         // Access decides every permission it knows about; others are left to their own rules.
         Gate::before(fn ($user, string $ability) => $user instanceof User && $access->has($ability)
