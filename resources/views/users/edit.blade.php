@@ -17,12 +17,11 @@
         </form>
 
         @unless ($user->is(auth()->user()))
-            <form method="POST" action="{{ route('access.users.destroy', $user) }}" class="border-t border-gray-200 dark:border-gray-700 pt-4"
-                  onsubmit="return confirm(@js(__('Remove :email? They won\'t be able to sign in.', ['email' => $user->email])))">
-                @csrf
-                @method('DELETE')
-                <x-danger-button>{{ __('Remove') }}</x-danger-button>
-            </form>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <x-confirm :action="route('access.users.destroy', $user)" method="DELETE" :message="__('Remove :email? They won\'t be able to sign in.', ['email' => $user->email])" :confirm="__('Remove')" danger>
+                    <x-slot name="trigger"><x-danger-button type="button">{{ __('Remove') }}</x-danger-button></x-slot>
+                </x-confirm>
+            </div>
         @endunless
     </x-settings-card>
 </x-admin-layout>

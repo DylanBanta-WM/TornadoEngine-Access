@@ -15,13 +15,13 @@
     "extra": {
         "tornado": {
             "name": "Access",
-            "core": ">=0.3",
+            "core": ">=0.20",
             "core-module": true,
             "provider": "TornadoEngine\\Access\\AccessServiceProvider",
             "settings": "/access/users"
         },
         "branch-alias": {
-            "dev-main": "0.8.x-dev"
+            "dev-main": "0.9.x-dev"
         }
     }
 }

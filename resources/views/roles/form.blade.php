@@ -54,12 +54,11 @@
         </form>
 
         @if ($role->exists && ! $role->isAdmin())
-            <form method="POST" action="{{ route('access.roles.destroy', $role) }}" class="border-t border-gray-200 dark:border-gray-700 pt-4"
-                  onsubmit="return confirm(@js(__('Remove the :name role? People with it lose its permissions.', ['name' => $role->name])))">
-                @csrf
-                @method('DELETE')
-                <x-danger-button>{{ __('Remove role') }}</x-danger-button>
-            </form>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <x-confirm :action="route('access.roles.destroy', $role)" method="DELETE" :message="__('Remove the :name role? People with it lose its permissions.', ['name' => $role->name])" :confirm="__('Remove role')" danger>
+                    <x-slot name="trigger"><x-danger-button type="button">{{ __('Remove role') }}</x-danger-button></x-slot>
+                </x-confirm>
+            </div>
         @endif
     </x-settings-card>
 </x-admin-layout>
