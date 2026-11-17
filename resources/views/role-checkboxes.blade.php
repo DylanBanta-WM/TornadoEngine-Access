@@ -4,7 +4,7 @@
 @else
     <fieldset>
         <legend class="block font-medium text-sm text-gray-700 dark:text-gray-300">{{ __('Roles') }}</legend>
-        <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($roles as $role)
                 <label class="flex min-h-11 items-center gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 text-sm has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-950/40">
                     <input type="checkbox" name="roles[]" value="{{ $role->id }}" class="rounded text-indigo-600 border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500" @checked(in_array($role->id, $checked))>
