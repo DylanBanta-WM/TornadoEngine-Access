@@ -15,6 +15,7 @@
     "extra": {
         "tornado": {
             "name": "Access",
+            "prompt": "Permissions: $access->permission(...), checked the usual Laravel way (Gate, can:). People and their roles are in Access.",
             "core": ">=0.21",
             "core-module": true,
             "provider": "TornadoEngine\\Access\\AccessServiceProvider",
