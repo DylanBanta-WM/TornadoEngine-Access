@@ -58,6 +58,7 @@ class Access
         return [
             'access.users.index' => ['label' => __('Users'), 'active' => 'access.users.*'],
             'access.roles.index' => ['label' => __('Roles'), 'active' => 'access.roles.*'],
+            'access.patterns.index' => ['label' => __('Email patterns'), 'active' => 'access.patterns.*'],
             'access.exclusions.index' => ['label' => __('Excluded'), 'active' => 'access.exclusions.*'],
         ] + $this->tabs;
     }
@@ -108,13 +109,19 @@ class Access
 
         $this->granted[$user->id] ??= Role::query()
             ->join('access_role_user', 'access_role_user.role_id', '=', 'access_roles.id')
-            ->join('access_role_permissions', 'access_role_permissions.role_id', '=', 'access_roles.id')
             ->where('access_role_user.user_id', $user->id)
-            ->distinct()
-            ->pluck('access_role_permissions.permission')
-            ->all();
+            ->where('access_roles.all_permissions', true)
+            ->exists()
+            ? ['*']
+            : Role::query()
+                ->join('access_role_user', 'access_role_user.role_id', '=', 'access_roles.id')
+                ->join('access_role_permissions', 'access_role_permissions.role_id', '=', 'access_roles.id')
+                ->where('access_role_user.user_id', $user->id)
+                ->distinct()
+                ->pluck('access_role_permissions.permission')
+                ->all();
 
-        return in_array($key, $this->granted[$user->id], true);
+        return $this->granted[$user->id] === ['*'] || in_array($key, $this->granted[$user->id], true);
     }
 
     /**

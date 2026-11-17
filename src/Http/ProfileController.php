@@ -16,7 +16,7 @@ use TornadoEngine\Nav\Nav;
 class ProfileController extends Controller
 {
     /** What each import source is called. */
-    public const SOURCES = ['google' => 'Google', 'microsoft-ad' => 'Active Directory', 'microsoft-entra' => 'Entra ID'];
+    public const SOURCES = ['google' => 'Google', 'microsoft-ad' => 'Active Directory', 'microsoft-entra' => 'Entra ID', 'email-pattern' => 'Email pattern'];
 
     public function __invoke(Request $request, Access $access): View
     {

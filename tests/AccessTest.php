@@ -13,6 +13,7 @@ use Tests\TestCase;
 use TornadoEngine\Access\Access;
 use TornadoEngine\Access\Imports;
 use TornadoEngine\Access\Models\Exclusion;
+use TornadoEngine\Access\Models\PatternRule;
 use TornadoEngine\Access\Models\Role;
 use TornadoEngine\Nav\Nav;
 use TornadoEngine\Nav\NavGroup;
@@ -148,7 +149,7 @@ class AccessTest extends TestCase
     public function test_imports_from_two_sources_only_take_back_their_own_roles(): void
     {
         $imports = app(Imports::class);
-        $staff = Role::create(['name' => 'Staff']);
+        $staff = Role::firstOrCreate(['name' => 'Staff']);
         $library = Role::create(['name' => 'Library']);
         $byHand = User::factory()->create(['email' => 'kim@school.test']);
         $byHand->roles()->attach($library);
@@ -173,7 +174,7 @@ class AccessTest extends TestCase
     {
         $imports = app(Imports::class);
         $owner = $this->owner();
-        $staff = Role::create(['name' => 'Staff']);
+        $staff = Role::firstOrCreate(['name' => 'Staff']);
         $imports->apply('google', [$staff->id => ['ann@school.test' => 'Ann Teacher']]);
 
         $this->actingAs($owner)->get('/access/users')->assertSeeInOrder(['Ann Teacher', 'Exclude', 'Edit']);
@@ -254,5 +255,47 @@ class AccessTest extends TestCase
         $this->actingAs($this->owner())->get('/dashboard')
             ->assertSeeInOrder(['Administration', 'Administration', 'Users and roles', 'Modules'])
             ->assertSee(route('profile'));
+    }
+
+    public function test_every_district_starts_with_admin_staff_and_student(): void
+    {
+        $this->assertSame(['Admin', 'Staff', 'Student'], Role::orderBy('name')->pluck('name')->all());
+        $this->assertTrue(Role::where('name', 'Admin')->value('all_permissions'));
+    }
+
+    public function test_a_role_with_every_permission_gets_ones_added_later(): void
+    {
+        $kim = User::factory()->create();
+        $kim->roles()->attach(Role::where('name', 'Admin')->value('id'));
+        app(Access::class)->permission('zz.later', 'Added later', module: 'Later');
+
+        $this->assertTrue($kim->can('zz.later'));
+        $this->assertTrue($kim->can('access.manage'));
+        $this->assertFalse(User::factory()->create()->can('zz.later'));
+    }
+
+    public function test_email_patterns_give_roles_to_everyone_who_matches(): void
+    {
+        $owner = $this->owner();
+        $student = Role::where('name', 'Student')->first();
+        $kid = User::factory()->create(['email' => 'wm30kid@school.test']);
+        User::factory()->create(['email' => 'teacher@school.test']);
+
+        $this->actingAs($owner)->post('/access/patterns', ['role_id' => $student->id, 'pattern' => '^wm\\d{2}[a-z]+@school\\.test$'])->assertSessionHasNoErrors();
+        $this->assertSame(['Student'], $kid->roles()->pluck('name')->all());
+        $this->assertSame([], User::where('email', 'teacher@school.test')->first()->roles()->pluck('name')->all());
+
+        // People added later get it too, by hand or from an import.
+        $this->actingAs($owner)->post('/access/users', ['email' => 'wm31new@school.test']);
+        $this->assertSame(['Student'], User::where('email', 'wm31new@school.test')->first()->roles()->pluck('name')->all());
+        app(Imports::class)->apply('google', [Role::where('name', 'Staff')->value('id') => ['wm32imp@school.test' => 'Imp']]);
+        $this->assertSame(['Staff', 'Student'], User::where('email', 'wm32imp@school.test')->first()->roles()->orderBy('name')->pluck('name')->all());
+
+        $this->actingAs($owner)->get('/access/patterns')->assertSee('^wm\\d{2}[a-z]+@school\\.test$', false)->assertSee('3 people');
+        $this->actingAs($owner)->from('/access/patterns')->post('/access/patterns', ['role_id' => $student->id, 'pattern' => '(unclosed'])->assertSessionHasErrors('pattern');
+
+        // Removing the rule takes the role back.
+        $this->actingAs($owner)->delete('/access/patterns/'.PatternRule::sole()->id);
+        $this->assertSame([], $kid->roles()->pluck('name')->all());
     }
 }

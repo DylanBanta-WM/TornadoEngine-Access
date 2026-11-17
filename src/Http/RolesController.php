@@ -29,7 +29,7 @@ class RolesController extends Controller
     {
         $data = $this->validated($request, $access);
 
-        $role = Role::create(['name' => $data['name'], 'description' => $data['description'] ?? null]);
+        $role = Role::create(['name' => $data['name'], 'description' => $data['description'] ?? null, 'all_permissions' => $request->boolean('all_permissions')]);
         $role->setPermissions($data['permissions'] ?? []);
         $access->forget();
 
@@ -45,7 +45,7 @@ class RolesController extends Controller
     {
         $data = $this->validated($request, $access, $role);
 
-        $role->update(['name' => $data['name'], 'description' => $data['description'] ?? null]);
+        $role->update(['name' => $data['name'], 'description' => $data['description'] ?? null, 'all_permissions' => $request->boolean('all_permissions')]);
         $role->setPermissions($data['permissions'] ?? []);
         $access->forget();
 

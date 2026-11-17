@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use TornadoEngine\Access\Http\ExclusionsController;
+use TornadoEngine\Access\Http\PatternsController;
 use TornadoEngine\Access\Http\ProfileController;
 use TornadoEngine\Access\Http\RolesController;
 use TornadoEngine\Access\Http\UsersController;
@@ -17,4 +18,7 @@ Route::middleware(['web', 'auth', 'can:access.manage'])
         Route::resource('users', UsersController::class)->except(['create', 'show']);
         Route::resource('roles', RolesController::class)->except(['show']);
         Route::resource('exclusions', ExclusionsController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::get('patterns', [PatternsController::class, 'index'])->name('patterns.index');
+        Route::post('patterns', [PatternsController::class, 'store'])->name('patterns.store');
+        Route::delete('patterns/{rule}', [PatternsController::class, 'destroy'])->name('patterns.destroy');
     });

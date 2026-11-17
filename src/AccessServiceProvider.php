@@ -14,6 +14,7 @@ class AccessServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Access::class);
         $this->app->singleton(Imports::class);
+        $this->app->singleton(Patterns::class);
     }
 
     public function boot(Access $access): void

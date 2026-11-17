@@ -11,7 +11,12 @@ class Role extends Model
 {
     protected $table = 'access_roles';
 
-    protected $fillable = ['name', 'description'];
+    protected $fillable = ['name', 'description', 'all_permissions'];
+
+    protected function casts(): array
+    {
+        return ['all_permissions' => 'boolean'];
+    }
 
     public function users(): BelongsToMany
     {

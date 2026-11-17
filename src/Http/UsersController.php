@@ -14,6 +14,7 @@ use Illuminate\View\View;
 use TornadoEngine\Access\Access;
 use TornadoEngine\Access\Models\Exclusion;
 use TornadoEngine\Access\Models\Role;
+use TornadoEngine\Access\Patterns;
 
 /**
  * The people who can sign in, and their roles. A person signs in with Google once they're added here.
@@ -67,6 +68,7 @@ class UsersController extends Controller
         $user->save();
         $user->roles()->sync($data['roles'] ?? []);
         $access->forget();
+        app(Patterns::class)->apply();
 
         return redirect()->route('access.users.index')->with('status', __(':email can now sign in.', ['email' => $email]));
     }

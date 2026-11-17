@@ -2,7 +2,7 @@
     @include('access::tabs')
 
     <x-settings-card :title="$role->exists ? $role->name : __('New role')">
-        <form method="POST" action="{{ $role->exists ? route('access.roles.update', $role) : route('access.roles.store') }}" class="space-y-6">
+        <form method="POST" action="{{ $role->exists ? route('access.roles.update', $role) : route('access.roles.store') }}" class="space-y-6" x-data="{ all: @js((bool) old('all_permissions', $role->all_permissions)) }">
             @csrf
             @if ($role->exists)
                 @method('PUT')
@@ -20,7 +20,13 @@
                 </div>
             </div>
 
-            <fieldset>
+            <label class="flex min-h-11 items-center gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-950/40">
+                <input type="hidden" name="all_permissions" value="0">
+                <input type="checkbox" name="all_permissions" value="1" x-model="all" class="rounded text-indigo-600 border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500">
+                <span class="text-gray-900 dark:text-gray-100">{{ __('Every permission, including ones modules add later') }}</span>
+            </label>
+
+            <fieldset x-show="! all">
                 <legend class="block font-medium text-sm text-gray-700 dark:text-gray-300">{{ __('What people with this role can do') }}</legend>
                 <div class="mt-3 space-y-5">
                     @php($checked = old('permissions', $granted))

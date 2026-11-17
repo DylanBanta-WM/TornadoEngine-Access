@@ -90,6 +90,10 @@ class Imports
 
         $this->access->forget();
 
+        if ($source !== Patterns::SOURCE) {
+            app(Patterns::class)->apply();
+        }
+
         return $result;
     }
 
