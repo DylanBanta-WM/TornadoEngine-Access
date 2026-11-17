@@ -18,6 +18,17 @@ class Role extends Model
         return ['all_permissions' => 'boolean'];
     }
 
+    /** The Admin role: the first with every permission (the setup admin has it). It keeps every permission and can't be removed. */
+    public static function admin(): ?self
+    {
+        return self::where('all_permissions', true)->orderBy('id')->first();
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->exists && $this->id === self::admin()?->id;
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'access_role_user');

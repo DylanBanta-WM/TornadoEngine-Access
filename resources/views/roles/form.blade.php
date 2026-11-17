@@ -22,7 +22,7 @@
 
             <label class="flex min-h-11 items-center gap-3 rounded-md border border-gray-200 dark:border-gray-700 px-3 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-950/40">
                 <input type="hidden" name="all_permissions" value="0">
-                <input type="checkbox" name="all_permissions" value="1" x-model="all" class="rounded text-indigo-600 border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500">
+                <input type="checkbox" name="all_permissions" value="1" x-model="all" @disabled($role->isAdmin()) class="rounded text-indigo-600 border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500 disabled:opacity-60">
                 <span class="text-gray-900 dark:text-gray-100">{{ __('Every permission, including ones modules add later') }}</span>
             </label>
 
@@ -53,7 +53,7 @@
             </div>
         </form>
 
-        @if ($role->exists)
+        @if ($role->exists && ! $role->isAdmin())
             <form method="POST" action="{{ route('access.roles.destroy', $role) }}" class="border-t border-gray-200 dark:border-gray-700 pt-4"
                   onsubmit="return confirm(@js(__('Remove the :name role? People with it lose its permissions.', ['name' => $role->name])))">
                 @csrf

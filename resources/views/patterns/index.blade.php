@@ -3,32 +3,39 @@
 <x-admin-layout :title="__('Users and roles')">
     @include('access::tabs')
 
-    <x-settings-card :title="__('Roles from email patterns')">
-        @if ($rules->isNotEmpty())
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
-                @foreach ($rules as $rule)
-                    <li class="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                        <div class="min-w-0">
-                            <p class="font-medium text-gray-900 dark:text-gray-100">{{ $rule->role->name }}</p>
-                            <p class="break-all"><code class="font-mono">{{ $rule->pattern }}</code></p>
+    @if ($rules->isNotEmpty())
+        <section class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+            @foreach ($rules as $rule)
+                <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0 space-y-1">
+                        <div class="flex flex-wrap items-baseline gap-x-3">
+                            <span class="font-medium text-gray-900 dark:text-gray-100">{{ $rule->role->name }}</span>
                             @if ($rule->matched !== null)
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ trans_choice(':count person|:count people', $rule->matched) }}</p>
+                                <span class="text-sm text-gray-500 dark:text-gray-400">{{ trans_choice(':count person|:count people', $rule->matched, ['count' => number_format($rule->matched)]) }}</span>
                             @endif
                         </div>
-                        <form method="POST" action="{{ route('access.patterns.destroy', $rule) }}" class="-ms-2 sm:ms-0">
-                            @csrf
-                            @method('DELETE')
-                            <button class="min-h-11 px-2 text-sm text-red-700 dark:text-red-400 underline">{{ __('Remove') }}</button>
-                        </form>
-                    </li>
-                @endforeach
-            </ul>
-        @endif
+                        <code class="block rounded bg-gray-100 dark:bg-gray-900 px-2 py-1 font-mono text-[13px] leading-5 text-gray-800 dark:text-gray-200 break-all">{{ $rule->pattern }}</code>
+                    </div>
+                    <form method="POST" action="{{ route('access.patterns.destroy', $rule) }}" class="shrink-0 self-end sm:self-auto">
+                        @csrf
+                        @method('DELETE')
+                        <x-secondary-button type="submit">{{ __('Remove') }}</x-secondary-button>
+                    </form>
+                </div>
+            @endforeach
+        </section>
+    @endif
 
-        <form method="POST" action="{{ route('access.patterns.store') }}" class="space-y-3">
+    <x-settings-card :title="__('Add a rule')">
+        <form method="POST" action="{{ route('access.patterns.store') }}" class="space-y-4">
             @csrf
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div>
+            <div>
+                <x-input-label for="pattern" :value="__('Email pattern')" />
+                <x-text-input id="pattern" name="pattern" class="mt-1 block w-full font-mono text-[13px]" type="text" :value="old('pattern')" required autocapitalize="off" spellcheck="false" placeholder="^wm\d{2}[a-z]+@district\.org$" />
+                <x-input-error :messages="$errors->get('pattern')" class="mt-2" />
+            </div>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div class="sm:w-64">
                     <x-input-label for="role_id" :value="__('Role')" />
                     <select id="role_id" name="role_id" class="{{ $select }}" required>
                         @foreach ($roles as $role)
@@ -36,14 +43,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="sm:col-span-2">
-                    <x-input-label for="pattern" :value="__('Email pattern (regular expression)')" />
-                    <x-text-input id="pattern" name="pattern" class="mt-1 block w-full font-mono" type="text" :value="old('pattern')" required autocapitalize="off" spellcheck="false" placeholder="^wm\d{2}[a-z]+@district\.org$" />
-                    <x-input-error :messages="$errors->get('pattern')" class="mt-2" />
-                </div>
-            </div>
-            <div class="flex justify-end">
-                <x-primary-button>{{ __('Add rule') }}</x-primary-button>
+                <x-primary-button class="justify-center sm:ms-auto">{{ __('Add rule') }}</x-primary-button>
             </div>
         </form>
     </x-settings-card>

@@ -308,4 +308,21 @@ class AccessTest extends TestCase
         $this->actingAs($owner)->get('/access/roles')->assertSeeInOrder(['Admin', '1'])->assertDontSee('Everything');
         $this->actingAs($owner)->get('/access/users')->assertDontSee('Setup admin');
     }
+
+    public function test_the_admin_role_keeps_every_permission_and_cant_be_removed(): void
+    {
+        $owner = $this->owner();
+        $admin = Role::admin();
+
+        $this->actingAs($owner)->get("/access/roles/{$admin->id}/edit")->assertSee('disabled', false)->assertDontSee('Remove role');
+        $this->actingAs($owner)->put("/access/roles/{$admin->id}", ['name' => 'Admin', 'all_permissions' => '0']);
+        $this->assertTrue($admin->fresh()->all_permissions);
+        $this->actingAs($owner)->delete("/access/roles/{$admin->id}")->assertForbidden();
+        $this->assertNotNull($admin->fresh());
+
+        // Other roles can still have it turned off.
+        $other = Role::create(['name' => 'Helpers', 'all_permissions' => true]);
+        $this->actingAs($owner)->put("/access/roles/{$other->id}", ['name' => 'Helpers', 'all_permissions' => '0']);
+        $this->assertFalse($other->fresh()->all_permissions);
+    }
 }

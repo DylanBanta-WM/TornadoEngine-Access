@@ -45,7 +45,7 @@ class RolesController extends Controller
     {
         $data = $this->validated($request, $access, $role);
 
-        $role->update(['name' => $data['name'], 'description' => $data['description'] ?? null, 'all_permissions' => $request->boolean('all_permissions')]);
+        $role->update(['name' => $data['name'], 'description' => $data['description'] ?? null, 'all_permissions' => $role->isAdmin() || $request->boolean('all_permissions')]);
         $role->setPermissions($data['permissions'] ?? []);
         $access->forget();
 
@@ -54,6 +54,8 @@ class RolesController extends Controller
 
     public function destroy(Role $role, Access $access): RedirectResponse
     {
+        abort_if($role->isAdmin(), 403);
+
         $role->delete();
         $access->forget();
 
