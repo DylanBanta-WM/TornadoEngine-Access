@@ -298,4 +298,14 @@ class AccessTest extends TestCase
         $this->actingAs($owner)->delete('/access/patterns/'.PatternRule::sole()->id);
         $this->assertSame([], $kid->roles()->pluck('name')->all());
     }
+
+    public function test_the_setup_admin_gets_the_admin_role(): void
+    {
+        $owner = $this->owner();
+
+        $this->assertSame(['Admin'], $owner->roles()->pluck('name')->all());
+        $this->assertSame([], User::factory()->create()->roles()->pluck('name')->all());
+        $this->actingAs($owner)->get('/access/roles')->assertSeeInOrder(['Admin', '1'])->assertDontSee('Everything');
+        $this->actingAs($owner)->get('/access/users')->assertDontSee('Setup admin');
+    }
 }

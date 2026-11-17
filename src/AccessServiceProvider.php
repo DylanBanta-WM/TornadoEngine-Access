@@ -23,6 +23,13 @@ class AccessServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'access');
         $this->loadRoutesFrom(__DIR__.'/../routes/access.php');
 
+        // The admin made in first-time setup gets the Admin role (every permission).
+        User::created(function (User $user) {
+            if ($user->is_admin && ($admin = Role::where('all_permissions', true)->orderBy('id')->first())) {
+                $user->roles()->syncWithoutDetaching([$admin->id]);
+            }
+        });
+
         User::resolveRelationUsing('roles', fn (User $user) => $user->belongsToMany(Role::class, 'access_role_user', 'user_id', 'role_id'));
 
         $access->permission('administration', __('Change the setup settings (Administration)'), 'Core');

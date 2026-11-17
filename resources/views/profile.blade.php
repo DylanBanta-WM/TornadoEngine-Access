@@ -16,9 +16,6 @@
     </x-settings-card>
 
     <x-settings-card :title="__('Roles')">
-        @if ($user->is_admin)
-            <p>{{ __('Setup admin: you can open everything.') }}</p>
-        @endif
         @if ($roles->isNotEmpty())
             <ul class="divide-y divide-gray-200 dark:divide-gray-700 rounded-md border border-gray-200 dark:border-gray-700">
                 @foreach ($roles as $role)

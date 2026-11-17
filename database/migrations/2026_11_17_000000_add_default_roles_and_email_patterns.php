@@ -25,7 +25,7 @@ return new class extends Migration
 
         // Every district starts with these; they can be renamed or removed.
         $existing = array_map('strtolower', DB::table('access_roles')->pluck('name')->all());
-        foreach ([['Admin', 'Everything.', true], ['Staff', null, false], ['Student', null, false]] as [$name, $description, $all]) {
+        foreach ([['Admin', null, true], ['Staff', null, false], ['Student', null, false]] as [$name, $description, $all]) {
             if (! in_array(strtolower($name), $existing, true)) {
                 DB::table('access_roles')->insert(['name' => $name, 'description' => $description, 'all_permissions' => $all, 'created_at' => now(), 'updated_at' => now()]);
             }

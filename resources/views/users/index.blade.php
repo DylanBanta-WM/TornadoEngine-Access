@@ -33,9 +33,6 @@
                     <p class="font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</p>
                     <p class="text-sm text-gray-600 dark:text-gray-400 break-all">{{ $user->email }}</p>
                     <p class="mt-1 flex flex-wrap gap-1">
-                        @if ($user->is_admin)
-                            <span class="rounded bg-indigo-50 dark:bg-indigo-900/50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">{{ __('Setup admin: everything') }}</span>
-                        @endif
                         @foreach ($user->roles as $role)
                             <span class="rounded bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-300">{{ $role->name }}</span>
                         @endforeach
