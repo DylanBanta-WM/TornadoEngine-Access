@@ -71,5 +71,16 @@
                 <p>{{ __('Nothing yet. Ask an administrator for access.') }}</p>
             @endif
         </x-settings-card>
+
+        {{-- Core's tour (0.27+), for people who can open Administration. --}}
+        @if (\Illuminate\Support\Facades\Route::has('tour.restart') && auth()->user()->can('administration'))
+            <x-settings-card :title="__('Tour')">
+                <p>{{ __('A walk through the menu and the main pages.') }}</p>
+                <form method="POST" action="{{ route('tour.restart') }}" class="flex justify-end">
+                    @csrf
+                    <x-secondary-button type="submit">{{ __('Take the tour again') }}</x-secondary-button>
+                </form>
+            </x-settings-card>
+        @endif
     </x-card-grid>
 </x-admin-layout>
