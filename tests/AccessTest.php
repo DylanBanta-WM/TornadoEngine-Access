@@ -325,4 +325,24 @@ class AccessTest extends TestCase
         $this->actingAs($owner)->put("/access/roles/{$other->id}", ['name' => 'Helpers', 'all_permissions' => '0']);
         $this->assertFalse($other->fresh()->all_permissions);
     }
+
+    public function test_the_users_list_can_be_searched_filtered_and_paged(): void
+    {
+        $owner = tap($this->owner())->update(['name' => 'Zz Owner']); // last by name
+        $teachers = Role::create(['name' => 'Teachers']);
+        foreach (range(1, 12) as $i) {
+            $user = User::factory()->create(['name' => sprintf('Person %02d', $i), 'email' => "p{$i}@school.test", 'password' => null, 'google_id' => $i <= 3 ? "g{$i}" : null]);
+            if ($i % 2 === 0) {
+                $user->roles()->attach($teachers);
+            }
+        }
+
+        $this->actingAs($owner)->get('/access/users?per_page=10')->assertOk()->assertSee('Person 10')->assertDontSee('Person 11')->assertSee('Showing 1–10 of 13');
+        $this->actingAs($owner)->get('/access/users?page=2')->assertSee('Person 11')->assertDontSee('Person 10', false); // the page size is remembered
+        $this->actingAs($owner)->get('/access/users?q=p7%40')->assertSee('Person 07')->assertDontSee('Person 08');
+        $this->actingAs($owner)->get('/access/users?roles[]='.$teachers->id)->assertSee('Person 02')->assertDontSee('Person 03')->assertSee('Showing 1–6 of 6');
+        $this->actingAs($owner)->get('/access/users?roles[]=none&per_page=25')->assertSee('Person 03')->assertDontSee('Person 02');
+        $this->actingAs($owner)->get('/access/users?sign_in=google')->assertSee('Person 03')->assertDontSee('Person 04');
+        $this->actingAs($owner)->get('/access/users?per_page=7')->assertSessionHasErrors('per_page');
+    }
 }

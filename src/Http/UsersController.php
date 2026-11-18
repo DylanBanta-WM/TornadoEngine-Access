@@ -21,13 +21,53 @@ use TornadoEngine\Access\Patterns;
  */
 class UsersController extends Controller
 {
-    public function index(): View
+    /** Results per page the list offers. */
+    public const PER_PAGE = [10, 25, 50, 100, 250, 500, 1000, 2500];
+
+    public function index(Request $request): View
     {
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:200'],
+            'roles' => ['nullable', 'array'],
+            'roles.*' => ['string', 'max:20'],
+            'sign_in' => ['nullable', Rule::in(['google', 'microsoft', 'password', 'none'])],
+            'per_page' => ['nullable', 'integer', Rule::in(self::PER_PAGE)],
+        ]);
+        // The page size is remembered for next time.
+        $perPage = (int) ($filters['per_page'] ?? session('access.users.per_page', 25));
+        session(['access.users.per_page' => $perPage]);
+
+        $query = User::with('roles')->whereNotIn('email', Exclusion::select('email')); // Excluded people are on the Excluded tab instead.
+        if (($search = trim($filters['q'] ?? '')) !== '') {
+            $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
+            $query->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('email', 'like', $like));
+        }
+        $roles = $filters['roles'] ?? [];
+        if ($roles !== []) {
+            $ids = array_map('intval', array_filter($roles, 'ctype_digit'));
+            $query->where(function ($q) use ($ids, $roles) {
+                if ($ids !== []) {
+                    $q->orWhereHas('roles', fn ($r) => $r->whereIn((new Role)->getTable().'.id', $ids));
+                }
+                if (in_array('none', $roles, true)) {
+                    $q->orWhere(fn ($n) => $n->doesntHave('roles')->where('is_admin', false));
+                }
+            });
+        }
+        match ($filters['sign_in'] ?? null) {
+            'google' => $query->whereNotNull('google_id'),
+            'microsoft' => $query->whereNotNull('microsoft_id'),
+            'password' => $query->whereNotNull('password'),
+            'none' => $query->whereNull('google_id')->whereNull('microsoft_id')->whereNull('password'),
+            default => null,
+        };
+
         return view('access::users.index', [
-            // Excluded people are on the Excluded tab instead.
-            'users' => User::with('roles')->whereNotIn('email', Exclusion::select('email'))->orderBy('name')->get(),
+            'users' => $query->orderBy('name')->orderBy('id')->paginate($perPage)->withQueryString(),
             'roles' => Role::orderBy('name')->get(),
             'domain' => GoogleSignIn::domain(),
+            'filters' => ['q' => $search, 'roles' => $roles, 'sign_in' => $filters['sign_in'] ?? '', 'per_page' => $perPage],
+            'filtered' => $search !== '' || $roles !== [] || ($filters['sign_in'] ?? null),
         ]);
     }
 
