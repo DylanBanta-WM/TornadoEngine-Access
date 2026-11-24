@@ -56,13 +56,13 @@ class AccessTest extends TestCase
     {
         $staff = User::factory()->create();
         $this->assertFalse($staff->can('administration'));
-        $this->actingAs($staff)->get('/administration')->assertForbidden();
+        $this->actingAs($staff)->get('/settings')->assertForbidden();
         $this->actingAs($staff)->get('/access/users')->assertForbidden();
 
         $staff->roles()->attach($this->role('Tech staff', ['administration']));
         app(Access::class)->forget();
 
-        $this->actingAs($staff)->get('/administration')->assertOk();
+        $this->actingAs($staff)->get('/settings')->assertOk();
         $this->actingAs($staff)->get('/access/users')->assertForbidden();
     }
 
